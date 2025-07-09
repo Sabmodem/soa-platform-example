@@ -1,5 +1,5 @@
 # Service oriented platform example
-The platform was built based nginx as api gateway and opa for centralized authorization. The platform has a main frontend that combines all services frontends using module federation technology. The current version of platform was designed as test version, it never have tested on any production environments.
+The platform was built based nginx as api gateway and opa+keycloak for centralized authorization. The platform has a main frontend that combines all services frontends using module federation technology. The current version of platform was designed as test version, it never have tested on any production environments.
 
 ## Quickstart
 ```
