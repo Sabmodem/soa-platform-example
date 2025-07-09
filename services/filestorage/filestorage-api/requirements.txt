@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+itsdangerous
+aiofiles
+python-multipart
+pyjwt[crypto]
+httpx
+cryptography

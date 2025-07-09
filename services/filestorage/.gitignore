@@ -1,0 +1,5 @@
+/node_modules/
+/static/uploads/*
+/log/
+**/__pycache__/
+/env/

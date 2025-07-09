@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  filestorage-api:
+    build: ${PWD}/services/filestorage/filestorage-api
+    environment:
+      KEYCLOAK_CLIENT_ID: "frontend-app"
+      FILES_DIR: "/files"
+      STATIC_FILES_DIR: "static"
+      KEYCLOAK_URL: "http://keycloak:8080"
+      KEYCLOAK_REALM: "my-realm"
+  filestorage-ui:
+    build: ${PWD}/services/filestorage/filestorage-ui
+
+networks:
+  default:
+    name: core-network
+    driver: bridge
+    external: true

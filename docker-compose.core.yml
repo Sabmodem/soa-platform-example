@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  opa:
+    image: openpolicyagent/opa:latest-envoy
+    ports:
+      - "8181:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "--log-level=debug"
+      - "/policies"
+    volumes:
+      - ${PWD}/core/opa/policies:/policies
+      - ${PWD}/core/opa/data:/data
+    networks:
+      - default
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak_password
+      
+      KC_PROXY: edge
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+      
+      KC_HTTP_RELATIVE_PATH: /auth
+    command: start-dev
+    volumes:
+      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    networks:
+      - default
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak_password
+    volumes:
+      - ${PWD}/core/postgres/data:/var/lib/postgresql/data
+    networks:
+      - default
+
+  gateway:
+    image: openresty/openresty:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # core config
+      - ${PWD}/core/nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ${PWD}/core/nginx/conf.d/:/usr/local/openresty/nginx/conf/conf.d/:ro
+      - ${PWD}/core/nginx/services.d/:/usr/local/openresty/nginx/conf/services.d/:ro
+      - ${PWD}/core/nginx/lua/:/usr/local/openresty/nginx/lua/:ro
+      # services config
+      - ${PWD}/services/filestorage/nginx/locations.conf:/usr/local/openresty/nginx/conf/filestorage-locations.conf:ro
+      - ${PWD}/services/filestorage/nginx/upstreams.conf:/usr/local/openresty/nginx/conf/filestorage-upstreams.conf:ro
+    depends_on:
+      - keycloak
+      - opa
+      - frontend
+    networks:
+      - default
+
+  frontend:
+    build: 
+      context: ${PWD}/core/main-ui
+      args:
+        VITE_KEYCLOAK_URL: "/auth"
+        VITE_KEYCLOAK_REALM: "my-realm"
+        VITE_KEYCLOAK_CLIENT_ID: "frontend-app"
+    networks:
+      - default
+
+networks:
+  default:
+    name: core-network
+    driver: bridge
+    external: true
